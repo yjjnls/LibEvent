@@ -26,8 +26,6 @@ namespace
 			evhttp_send_reply(request, 200, "OK", evb);
 			evbuffer_free(evb);
 		}
-		
-
 	}
 	void HttpServer(event_base *base, evhttp *http)
 	{
@@ -71,10 +69,11 @@ namespace
 
 /******************************************************
 
-
+The simplest request-reply pattern of http, implementing 
+using lib event.
 
 ******************************************************/
-TEST(Libevent, PUB_SUB)
+TEST(LibEvent, REQ_REP)
 {
 	stop = false;
 	event_base *base_server = event_base_new();
@@ -89,7 +88,7 @@ TEST(Libevent, PUB_SUB)
 	boost::thread thrd1(&HttpServer, base_server, http);
 	boost::thread thrd2(&HttpClient, base_client, connection);
 	
-	SLEEP(2000);
+	SLEEP(1000);
 	stop = true;
 	
 	evhttp_free(http);
