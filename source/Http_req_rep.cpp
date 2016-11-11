@@ -1,12 +1,12 @@
 #include <Common.h>
 
-
 namespace
 {
 	bool stop = false;
 	std::string host("127.0.0.1");
 	uint16_t port = 9000;
 
+	struct evhttp_request *request_ = NULL;
 	void ServerRequest(evhttp_request *request, void *arg)
 	{
 		evhttp_cmd_type cmd = evhttp_request_get_command(request);
@@ -17,15 +17,15 @@ namespace
 		struct evbuffer *buf = evhttp_request_get_input_buffer(request);
 		size_t size = evbuffer_get_length(buf);
 
-		for (int i = 0; i < 2; ++i)
-		{
+// 		for (int i = 0; i < 2; ++i)
+// 		{
 			evbuffer* evb = evbuffer_new();
 			ASSERT_TRUE(evb != NULL);
 			std::string rsp("HelloWorld");
 			ASSERT_TRUE(0 == evbuffer_add(evb, rsp.c_str(), rsp.size()));
 			evhttp_send_reply(request, 200, "OK", evb);
-			evbuffer_free(evb);
-		}
+			//evbuffer_free(evb);
+//		}
 	}
 	void HttpServer(event_base *base, evhttp *http)
 	{
@@ -36,12 +36,11 @@ namespace
 		{
 			event_base_dispatch(base);
 		}
-
-		
 	}
 	//////////////////////////////////////////////////////////////////////////
 	void RequestDone(evhttp_request *request, void *arg)
 	{
+		//ASSERT_TRUE(request_ == request);
 		int code = evhttp_request_get_response_code(request);
 		ASSERT_TRUE(code == HTTP_OK);
 		evbuffer* buf = evhttp_request_get_input_buffer(request);
@@ -49,6 +48,7 @@ namespace
 		std::string result;
 		result.append(static_cast<char *>(static_cast<void *>(evbuffer_pullup(buf, -1))), len);
 		std::cout << result.c_str() << std::endl;
+		//evhttp_request_free(request);
 	}
 	void HttpClient(event_base *base, evhttp_connection *connection)
 	{
@@ -57,7 +57,7 @@ namespace
 		evbuffer* buf = evhttp_request_get_output_buffer(request);
 		std::string req("12345");
 		evbuffer_add(buf, req.c_str(), req.size());
-
+		request_ = request;
 		ASSERT_TRUE(0 == evhttp_make_request(connection, request, EVHTTP_REQ_POST, "/pub"));
 
 		while (!stop)
@@ -88,18 +88,18 @@ TEST(LibEvent, REQ_REP)
 	boost::thread thrd1(&HttpServer, base_server, http);
 	boost::thread thrd2(&HttpClient, base_client, connection);
 	
-	SLEEP(1000);
+	SLEEP(2000);
 	stop = true;
 	
 	evhttp_free(http);
 	event_base_loopbreak(base_server);
 	event_base_free(base_server);
 	
-	
-	evhttp_connection_free(connection);
 	event_base_loopbreak(base_client);
+	evhttp_connection_free(connection);
+	
 	event_base_free(base_client);
-
+	SLEEP(2000);
 	thrd1.join();
 	thrd2.join();
 }
