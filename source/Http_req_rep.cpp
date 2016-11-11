@@ -7,7 +7,7 @@ namespace
 	uint16_t port = 9000;
 
 	struct evhttp_request *request_ = NULL;
-	void ServerRequest(evhttp_request *request, void *arg)
+	static void ServerRequest(evhttp_request *request, void *arg)
 	{
 		evhttp_cmd_type cmd = evhttp_request_get_command(request);
 		if (cmd != EVHTTP_REQ_POST)
@@ -27,7 +27,7 @@ namespace
 			//evbuffer_free(evb);
 //		}
 	}
-	void HttpServer(event_base *base, evhttp *http)
+	static void HttpServer(event_base *base, evhttp *http)
 	{
 		ASSERT_TRUE(0 == evhttp_set_cb(http, "/pub", ServerRequest, NULL));
 		ASSERT_TRUE(0 == evhttp_bind_socket(http, host.c_str(), port));
@@ -38,7 +38,7 @@ namespace
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
-	void RequestDone(evhttp_request *request, void *arg)
+	static void RequestDone(evhttp_request *request, void *arg)
 	{
 		//ASSERT_TRUE(request_ == request);
 		int code = evhttp_request_get_response_code(request);
@@ -50,7 +50,7 @@ namespace
 		std::cout << result.c_str() << std::endl;
 		//evhttp_request_free(request);
 	}
-	void HttpClient(event_base *base, evhttp_connection *connection)
+	static void HttpClient(event_base *base, evhttp_connection *connection)
 	{
 		
 		struct evhttp_request *request = evhttp_request_new(RequestDone, NULL);//make request by connection
@@ -95,11 +95,9 @@ TEST(LibEvent, REQ_REP)
 	event_base_loopbreak(base_server);
 	event_base_free(base_server);
 	
-	event_base_loopbreak(base_client);
 	evhttp_connection_free(connection);
-	
+	event_base_loopbreak(base_client);
 	event_base_free(base_client);
-	SLEEP(2000);
 	thrd1.join();
 	thrd2.join();
 }
