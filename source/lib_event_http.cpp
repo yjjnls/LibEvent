@@ -29,7 +29,7 @@ namespace
 		
 
 	}
-	void ServerFun(event_base *base, evhttp *http)
+	void HttpServer(event_base *base, evhttp *http)
 	{
 		ASSERT_TRUE(0 == evhttp_set_cb(http, "/pub", ServerRequest, NULL));
 		ASSERT_TRUE(0 == evhttp_bind_socket(http, host.c_str(), port));
@@ -39,7 +39,7 @@ namespace
 			event_base_dispatch(base);
 		}
 
-		event_base_free(base);
+		
 	}
 	//////////////////////////////////////////////////////////////////////////
 	void RequestDone(evhttp_request *request, void *arg)
@@ -52,7 +52,7 @@ namespace
 		result.append(static_cast<char *>(static_cast<void *>(evbuffer_pullup(buf, -1))), len);
 		std::cout << result.c_str() << std::endl;
 	}
-	void ClientFun(event_base *base, evhttp_connection *connection)
+	void HttpClient(event_base *base, evhttp_connection *connection)
 	{
 		
 		struct evhttp_request *request = evhttp_request_new(RequestDone, NULL);//make request by connection
@@ -82,24 +82,25 @@ TEST(Libevent, PUB_SUB)
 	evhttp *http = evhttp_new(base_server);
 	ASSERT_TRUE(http != NULL);
 
-// 	struct event_base *base_client = event_base_new();
-// 	ASSERT_TRUE(base_client != NULL);
-// 	struct evhttp_connection *connection = evhttp_connection_base_new(base_client, NULL, host.c_str(), port);
-// 	ASSERT_TRUE(connection != NULL);
-	boost::thread thrd1(&ServerFun, base_server, http);
-/*	boost::thread thrd2(&ClientFun, base_client, connection);*/
+	struct event_base *base_client = event_base_new();
+	ASSERT_TRUE(base_client != NULL);
+	struct evhttp_connection *connection = evhttp_connection_base_new(base_client, NULL, host.c_str(), port);
+	ASSERT_TRUE(connection != NULL);
+	boost::thread thrd1(&HttpServer, base_server, http);
+	boost::thread thrd2(&HttpClient, base_client, connection);
 	
 	SLEEP(2000);
 	stop = true;
 	
-	event_base_loopbreak(base_server);
 	evhttp_free(http);
+	event_base_loopbreak(base_server);
+	event_base_free(base_server);
 	
 	
-// 	evhttp_connection_free(connection);
-// 	event_base_loopbreak(base_client);
-// 	event_base_free(base_client);
+	evhttp_connection_free(connection);
+	event_base_loopbreak(base_client);
+	event_base_free(base_client);
 
 	thrd1.join();
-/*	thrd2.join();*/
+	thrd2.join();
 }
