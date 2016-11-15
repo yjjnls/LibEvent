@@ -50,7 +50,10 @@ namespace
 		std::string result;
 		result.append(static_cast<char *>(static_cast<void *>(evbuffer_pullup(buf, -1))), len);
 		std::cout << result.c_str() << std::endl;
-		evhttp_request_free(request);
+		if (evhttp_request_is_owned(request))
+		{
+			evhttp_request_free(request);
+		}
 	}
 	void HttpClient(event_base *base, evhttp_connection *connection)
 	{
