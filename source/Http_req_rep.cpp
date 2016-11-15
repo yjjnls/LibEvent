@@ -37,6 +37,7 @@ namespace
 		{
 			event_base_dispatch(base);
 		}
+
 	}
 	//////////////////////////////////////////////////////////////////////////
 	void RequestDone(evhttp_request *request, void *arg)
@@ -92,16 +93,13 @@ TEST(LibEvent, REQ_REP)
 	
 	SLEEP(1000);
 	stop = true;
-
-	evhttp_free(http);
 	event_base_loopbreak(base_server);
-
-	evhttp_connection_free(connection);
 	event_base_loopbreak(base_client);
 
+	evhttp_free(http);
+	evhttp_connection_free(connection);
 	thrd1.join();
 	thrd2.join();
-	
 	event_base_free(base_server);
 	event_base_free(base_client);
 	
