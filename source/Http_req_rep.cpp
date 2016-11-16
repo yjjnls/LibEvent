@@ -42,6 +42,8 @@ namespace
 	//////////////////////////////////////////////////////////////////////////
 	void RequestDone(evhttp_request *request, void *arg)
 	{
+//		evhttp_request_own(request);
+
 		ASSERT_TRUE(request != NULL);
 		int code = evhttp_request_get_response_code(request);
 		ASSERT_TRUE(code == HTTP_OK);
@@ -50,21 +52,25 @@ namespace
 		std::string result;
 		result.append(static_cast<char *>(static_cast<void *>(evbuffer_pullup(buf, -1))), len);
 		std::cout << result.c_str() << std::endl;
-		if (evhttp_request_is_owned(request))
-		{
-			evhttp_request_free(request);
-		}
+
+// 		if (evhttp_request_is_owned(request))
+// 		{
+// 			evhttp_request_free(request);
+// 		}
 	}
 	void HttpClient(event_base *base, evhttp_connection *connection)
 	{
-		
-		struct evhttp_request *request = evhttp_request_new(RequestDone, NULL);//make request by connection
-		evbuffer* buf = evhttp_request_get_output_buffer(request);
-		std::string req("12345");
-		evbuffer_add(buf, req.c_str(), req.size());
-		int rc = -1;
-		rc = evhttp_make_request(connection, request, EVHTTP_REQ_POST, "/pub");
-		ASSERT_TRUE(rc == 0);
+		for (int i = 0; i < 5; ++i)
+		{
+			struct evhttp_request *request = evhttp_request_new(RequestDone, NULL);//make request by connection
+			evbuffer* buf = evhttp_request_get_output_buffer(request);
+			std::string req("12345");
+			evbuffer_add(buf, req.c_str(), req.size());
+			int rc = -1;
+
+			rc = evhttp_make_request(connection, request, EVHTTP_REQ_POST, "/pub");
+			ASSERT_TRUE(rc == 0);
+		}
 
 		while (!stop)
 		{
@@ -98,11 +104,13 @@ TEST(LibEvent, REQ_REP)
 	stop = true;
 	event_base_loopbreak(base_server);
 	event_base_loopbreak(base_client);
-
-	evhttp_free(http);
+	
 	evhttp_connection_free(connection);
+	evhttp_free(http);
+	
 	thrd1.join();
 	thrd2.join();
+
 	event_base_free(base_server);
 	event_base_free(base_client);
 	
